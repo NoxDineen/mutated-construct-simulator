@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutated Construct Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #111827;
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #f59e0b;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #d1d5db;
+        }
+
+        .menu-screen, .end-screen {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .instructions {
+            background-color: #1f2937;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .instructions h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .instructions p {
+            margin-bottom: 8px;
+            font-size: 0.875rem;
+        }
+
+        .btn {
+            background-color: #d97706;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background-color: #b45309;
+        }
+
+        .btn-blue {
+            background-color: #2563eb;
+        }
+
+        .btn-blue:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-gray {
+            background-color: #4b5563;
+        }
+
+        .btn-gray:hover {
+            background-color: #374151;
+        }
+
+        .hud {
+            background-color: #1f2937;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-label {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .hud-value {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #374151;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.2s;
+            border-radius: 4px;
+        }
+
+        .progress-willpower {
+            background-color: #3b82f6;
+        }
+
+        .progress-health {
+            background-color: #ef4444;
+        }
+
+        .abilities {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .ability {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ability-ready {
+            background-color: #d97706;
+        }
+
+        .ability-cooldown {
+            background-color: #4b5563;
+        }
+
+        .ability-active {
+            background-color: #dc2626;
+        }
+
+        .ability-available {
+            background-color: #059669;
+        }
+
+        .ability-escape {
+            background-color: #eab308;
+            animation: pulse 1s infinite;
+        }
+
+        .game-area {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background-color: #374151;
+            border-radius: 8px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .player {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid white;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .player-normal {
+            background-color: #f59e0b;
+        }
+
+        .player-struggling {
+            background-color: #ef4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        .player-vulnerable {
+            background-color: #f97316;
+        }
+
+        .enemy {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            border: 2px solid white;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .enemy-normal {
+            background-color: #7c3aed;
+        }
+
+        .enemy-casting {
+            background-color: #dc2626;
+            animation: pulse 0.5s infinite;
+        }
+
+        .cast-bar {
+            position: absolute;
+            height: 4px;
+            background-color: #f87171;
+            border-radius: 2px;
+            transition: width 0.1s;
+        }
+
+        .amber-pool {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: #fbbf24;
+            border: 2px solid #f97316;
+            border-radius: 50%;
+            cursor: pointer;
+            animation: pulse 1s infinite;
+        }
+
+        .vulnerability-indicator {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background-color: #dc2626;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            animation: pulse 0.5s infinite;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .end-screen {
+            padding: 40px 0;
+        }
+
+        .end-message {
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .death-message {
+            background-color: #7f1d1d;
+        }
+
+        .escape-message {
+            background-color: #14532d;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Mutated Construct Simulator</h1>
+            <p class="subtitle">Learn the vehicle mechanics before your raid!</p>
+        </div>
+
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="menu-screen">
+            <div class="instructions">
+                <h2>Instructions</h2>
+                <p><strong>Goal:</strong> Survive as a Mutated Construct by managing Willpower</p>
+                <p><strong>Movement:</strong> WASD or Arrow Keys</p>
+                <p><strong>Amber Strike:</strong> Click on enemies (interrupts casts, deals damage)</p>
+                <p><strong>Struggle for Control:</strong> Spacebar (costs 8 Willpower, stuns you briefly, makes you vulnerable)</p>
+                <p><strong>Consume Amber:</strong> F key when near amber pools (restores 20 Willpower)</p>
+                <p><strong>Break Free:</strong> E key when health is ≤20%</p>
+                <p><strong>Willpower:</strong> Drains 2 per second - don't let it reach 0!</p>
+                <p><strong>Strategy:</strong> Interrupt enemy casts, consume amber to restore Willpower, survive!</p>
+            </div>
+            <button id="start-btn" class="btn">▶ Start Simulation</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="hidden">
+            <!-- HUD -->
+            <div class="hud">
+                <div class="hud-grid">
+                    <div class="hud-item">
+                        <div class="hud-label" style="color: #3b82f6;">Willpower</div>
+                        <div id="willpower-value" class="hud-value">100/100</div>
+                        <div class="progress-bar">
+                            <div id="willpower-bar" class="progress-fill progress-willpower" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="hud-item">
+                        <div class="hud-label" style="color: #ef4444;">Health</div>
+                        <div id="health-value" class="hud-value">100/100</div>
+                        <div class="progress-bar">
+                            <div id="health-bar" class="progress-fill progress-health" style="width: 100%;"></div>
+                        </div>
+                    </div>
+                    <div class="hud-item">
+                        <div class="hud-label" style="color: #f59e0b;">Score</div>
+                        <div id="score-value" class="hud-value">0</div>
+                    </div>
+                    <div class="hud-item">
+                        <div class="hud-label" style="color: #10b981;">Time</div>
+                        <div id="time-value" class="hud-value">0s</div>
+                    </div>
+                </div>
+                
+                <div class="abilities">
+                    <div id="amber-strike-ability" class="ability ability-ready">
+                        ⚡ Amber Strike (Ready)
+                    </div>
+                    <div id="struggle-ability" class="ability ability-ready">
+                        🛡 Struggle (8 WP)
+                    </div>
+                    <div id="consume-ability" class="ability ability-cooldown hidden">
+                        💧 Press F to consume amber
+                    </div>
+                    <div id="break-free-ability" class="ability ability-escape hidden">
+                        Press E to Break Free!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Area -->
+            <div id="game-area" class="game-area">
+                <div id="player" class="player player-normal">YOU</div>
+                <div id="vulnerability-indicator" class="vulnerability-indicator hidden">
+                    VULNERABLE! (<span id="vulnerability-time">5</span>s)
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button id="pause-btn" class="btn btn-blue">⏸</button>
+                <button id="reset-btn" class="btn btn-gray">↻</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="end-screen hidden">
+            <div id="end-message" class="end-message">
+                <h2 id="end-title">Game Over</h2>
+                <p id="end-description">Description</p>
+                <p id="end-stats">Stats</p>
+            </div>
+            <button id="try-again-btn" class="btn">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = 'menu'; // 'menu', 'playing', 'paused', 'dead', 'escaped'
+        let willpower = 100;
+        let health = 100;
+        let maxHealth = 100;
+        let damageVulnerable = false;
+        let vulnerabilityTimer = 0;
+        let gameTime = 0;
+        let score = 0;
+        let enemiesKilled = 0;
+
+        // Ability states
+        let amberStrikeCooldown = 0;
+        let strugglingForControl = false;
+        let struggleTimer = 0;
+
+        // Game objects
+        let enemies = [];
+        let amberPools = [];
+        let playerPosition = { x: 400, y: 300 };
+        let gameLoopInterval = null;
+        let isPaused = false;
+
+        // Constants
+        const WILLPOWER_DRAIN_RATE = 2;
+        const AMBER_STRIKE_DAMAGE = 350000;
+        const AMBER_STRIKE_COOLDOWN = 2000;
+        const STRUGGLE_COST = 8;
+        const STRUGGLE_DURATION = 500;
+        const VULNERABILITY_DURATION = 5000;
+        const AMBER_POOL_RESTORE = 20;
+        const BREAK_FREE_THRESHOLD = 20;
+
+        // DOM elements
+        const menuScreen = document.getElementById('menu-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endScreen = document.getElementById('end-screen');
+        const gameArea = document.getElementById('game-area');
+        const player = document.getElementById('player');
+
+        // Initialize game
+        function initializeGame() {
+            willpower = 100;
+            health = 100;
+            maxHealth = 100;
+            damageVulnerable = false;
+            vulnerabilityTimer = 0;
+            gameTime = 0;
+            score = 0;
+            enemiesKilled = 0;
+            amberStrikeCooldown = 0;
+            strugglingForControl = false;
+            struggleTimer = 0;
+            playerPosition = { x: 400, y: 300 };
+            isPaused = false;
+
+            // Create initial enemies
+            enemies = [
+                { id: 1, x: 200, y: 200, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 2, x: 600, y: 200, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 3, x: 200, y: 400, health: 100, maxHealth: 100, casting: false, castTime: 0 }
+            ];
+
+            // Create initial amber pools
+            amberPools = [
+                { id: 1, x: 150, y: 500, consumed: false },
+                { id: 2, x: 650, y: 500, consumed: false },
+                { id: 3, x: 400, y: 150, consumed: false }
+            ];
+
+            updateUI();
+            renderGameObjects();
+        }
+
+        // Update UI elements
+        function updateUI() {
+            document.getElementById('willpower-value').textContent = `${Math.ceil(willpower)}/100`;
+            document.getElementById('willpower-bar').style.width = `${willpower}%`;
+            
+            document.getElementById('health-value').textContent = `${Math.ceil(health)}/${Math.ceil(maxHealth)}`;
+            document.getElementById('health-bar').style.width = `${(health/maxHealth) * 100}%`;
+            
+            document.getElementById('score-value').textContent = score;
+            document.getElementById('time-value').textContent = `${Math.floor(gameTime/1000)}s`;
+
+            // Update abilities
+            const amberStrikeAbility = document.getElementById('amber-strike-ability');
+            if (amberStrikeCooldown > 0) {
+                amberStrikeAbility.textContent = `⚡ Amber Strike (${Math.ceil(amberStrikeCooldown/1000)}s)`;
+                amberStrikeAbility.className = 'ability ability-cooldown';
+            } else {
+                amberStrikeAbility.textContent = '⚡ Amber Strike (Ready)';
+                amberStrikeAbility.className = 'ability ability-ready';
+            }
+
+            const struggleAbility = document.getElementById('struggle-ability');
+            if (strugglingForControl) {
+                struggleAbility.textContent = '🛡 Struggle (Active)';
+                struggleAbility.className = 'ability ability-active';
+            } else if (willpower >= STRUGGLE_COST) {
+                struggleAbility.textContent = '🛡 Struggle (8 WP)';
+                struggleAbility.className = 'ability ability-ready';
+            } else {
+                struggleAbility.textContent = '🛡 Struggle (8 WP)';
+                struggleAbility.className = 'ability ability-cooldown';
+            }
+
+            // Check for nearby amber pools
+            const nearbyPools = amberPools.filter(pool => {
+                if (pool.consumed) return false;
+                const distance = Math.sqrt(
+                    Math.pow(pool.x - playerPosition.x, 2) + 
+                    Math.pow(pool.y - playerPosition.y, 2)
+                );
+                return distance <= 50;
+            });
+
+            const consumeAbility = document.getElementById('consume-ability');
+            if (nearbyPools.length > 0) {
+                consumeAbility.classList.remove('hidden');
+            } else {
+                consumeAbility.classList.add('hidden');
+            }
+
+            // Break free ability
+            const breakFreeAbility = document.getElementById('break-free-ability');
+            if (health <= BREAK_FREE_THRESHOLD) {
+                breakFreeAbility.classList.remove('hidden');
+            } else {
+                breakFreeAbility.classList.add('hidden');
+            }
+
+            // Vulnerability indicator
+            const vulnIndicator = document.getElementById('vulnerability-indicator');
+            if (damageVulnerable) {
+                vulnIndicator.classList.remove('hidden');
+                document.getElementById('vulnerability-time').textContent = Math.ceil(vulnerabilityTimer/1000);
+            } else {
+                vulnIndicator.classList.add('hidden');
+            }
+
+            // Update player appearance
+            if (strugglingForControl) {
+                player.className = 'player player-struggling';
+            } else if (damageVulnerable) {
+                player.className = 'player player-vulnerable';
+            } else {
+                player.className = 'player player-normal';
+            }
+        }
+
+        // Render game objects
+        function renderGameObjects() {
+            // Clear existing objects
+            const existingEnemies = gameArea.querySelectorAll('.enemy');
+            const existingPools = gameArea.querySelectorAll('.amber-pool');
+            const existingCastBars = gameArea.querySelectorAll('.cast-bar');
+            
+            existingEnemies.forEach(el => el.remove());
+            existingPools.forEach(el => el.remove());
+            existingCastBars.forEach(el => el.remove());
+
+            // Update player position
+            player.style.left = `${playerPosition.x - 16}px`;
+            player.style.top = `${playerPosition.y - 16}px`;
+
+            // Render enemies
+            enemies.forEach(enemy => {
+                if (enemy.health <= 0) return;
+
+                const enemyEl = document.createElement('div');
+                enemyEl.className = enemy.casting ? 'enemy enemy-casting' : 'enemy enemy-normal';
+                enemyEl.style.left = `${enemy.x - 24}px`;
+                enemyEl.style.top = `${enemy.y - 24}px`;
+                enemyEl.textContent = enemy.casting ? 'CAST' : 'MOB';
+                enemyEl.onclick = () => useAmberStrike(enemy.id);
+                gameArea.appendChild(enemyEl);
+
+                // Render cast bar
+                if (enemy.casting) {
+                    const castBar = document.createElement('div');
+                    castBar.className = 'cast-bar';
+                    castBar.style.left = `${enemy.x - 24}px`;
+                    castBar.style.top = `${enemy.y + 32}px`;
+                    castBar.style.width = `${(enemy.castTime / 3000) * 48}px`;
+                    gameArea.appendChild(castBar);
+                }
+            });
+
+            // Render amber pools
+            amberPools.forEach(pool => {
+                if (pool.consumed) return;
+
+                const poolEl = document.createElement('div');
+                poolEl.className = 'amber-pool';
+                poolEl.style.left = `${pool.x - 12}px`;
+                poolEl.style.top = `${pool.y - 12}px`;
+                poolEl.onclick = () => consumeAmberPool(pool.id);
+                gameArea.appendChild(poolEl);
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (gameState !== 'playing' || isPaused) return;
+
+            gameTime += 100;
+
+            // Drain willpower
+            willpower -= WILLPOWER_DRAIN_RATE * 0.1;
+            if (willpower <= 0) {
+                gameState = 'dead';
+                showEndScreen();
+                return;
+            }
+
+            // Update cooldowns
+            amberStrikeCooldown = Math.max(0, amberStrikeCooldown - 100);
+            vulnerabilityTimer = Math.max(0, vulnerabilityTimer - 100);
+            struggleTimer = Math.max(0, struggleTimer - 100);
+
+            // Update struggle state
+            strugglingForControl = strugglingForControl && struggleTimer > 0;
+
+            // Remove vulnerability when timer expires
+            if (vulnerabilityTimer <= 0) {
+                damageVulnerable = false;
+            }
+
+            // Enemy AI
+            enemies.forEach((enemy, index) => {
+                if (enemy.health <= 0) return;
+
+                // Start casting
+                if (!enemy.casting && Math.random() < 0.005) {
+                    enemies[index] = { ...enemy, casting: true, castTime: 3000 };
+                    return;
+                }
+
+                // Update cast time
+                if (enemy.casting) {
+                    const newCastTime = enemy.castTime - 100;
+                    if (newCastTime <= 0) {
+                        // Cast completed - deal damage
+                        if (!strugglingForControl) {
+                            const damage = damageVulnerable ? 40 : 20;
+                            health = Math.max(0, health - damage);
+                            if (health <= 0) {
+                                gameState = 'dead';
+                                showEndScreen();
+                                return;
+                            }
+                        }
+                        enemies[index] = { ...enemy, casting: false, castTime: 0 };
+                    } else {
+                        enemies[index] = { ...enemy, castTime: newCastTime };
+                    }
+                }
+            });
+
+            // Spawn new amber pools occasionally
+            if (Math.random() < 0.002) {
+                const newId = Math.max(...amberPools.map(p => p.id), 0) + 1;
+                amberPools.push({
+                    id: newId,
+                    x: 100 + Math.random() * 600,
+                    y: 100 + Math.random() * 400,
+                    consumed: false
+                });
+            }
+
+            updateUI();
+            renderGameObjects();
+        }
+
+        // Abilities
+        function useAmberStrike(targetId) {
+            if (amberStrikeCooldown > 0 || strugglingForControl || gameState !== 'playing') return;
+
+            amberStrikeCooldown = AMBER_STRIKE_COOLDOWN;
+
+            enemies.forEach((enemy, index) => {
+                if (enemy.id === targetId) {
+                    const newHealth = Math.max(0, enemy.health - 50);
+                    if (newHealth === 0) {
+                        enemiesKilled++;
+                        score += 100;
+                    }
+                    enemies[index] = { ...enemy, health: newHealth, casting: false, castTime: 0 };
+                }
+            });
+        }
+
+        function useStruggleForControl() {
+            if (willpower < STRUGGLE_COST || strugglingForControl || gameState !== 'playing') return;
+
+            willpower -= STRUGGLE_COST;
+            strugglingForControl = true;
+            struggleTimer = STRUGGLE_DURATION;
+            damageVulnerable = true;
+            vulnerabilityTimer = VULNERABILITY_DURATION;
+
+            // Interrupt all enemy casts
+            enemies.forEach((enemy, index) => {
+                enemies[index] = { ...enemy, casting: false, castTime: 0 };
+            });
+        }
+
+        function consumeAmberPool(poolId) {
+            const pool = amberPools.find(p => p.id === poolId && !p.consumed);
+            if (!pool || strugglingForControl || gameState !== 'playing') return;
+
+            const distance = Math.sqrt(
+                Math.pow(pool.x - playerPosition.x, 2) + 
+                Math.pow(pool.y - playerPosition.y, 2)
+            );
+
+            if (distance <= 50) {
+                pool.consumed = true;
+                willpower = Math.min(100, willpower + AMBER_POOL_RESTORE);
+                maxHealth += 20;
+                health += 20;
+                score += 50;
+            }
+        }
+
+        function breakFree() {
+            if (health > BREAK_FREE_THRESHOLD || gameState !== 'playing') return;
+            gameState = 'escaped';
+            showEndScreen();
+        }
+
+        // Movement
+        function movePlayer(direction) {
+            if (strugglingForControl || gameState !== 'playing' || isPaused) return;
+
+            switch(direction) {
+                case 'up': playerPosition.y = Math.max(50, playerPosition.y - 20); break;
+                case 'down': playerPosition.y = Math.min(550, playerPosition.y + 20); break;
+                case 'left': playerPosition.x = Math.max(50, playerPosition.x - 20); break;
+                case 'right': playerPosition.x = Math.min(750, playerPosition.x + 20); break;
+            }
+        }
+
+        // Show end screen
+        function showEndScreen() {
+            clearInterval(gameLoopInterval);
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+
+            const endMessage = document.getElementById('end-message');
+            const endTitle = document.getElementById('end-title');
+            const endDescription = document.getElementById('end-description');
+            const endStats = document.getElementById('end-stats');
+
+            if (gameState === 'dead') {
+                endMessage.className = 'end-message death-message';
+                endTitle.textContent = 'Construct Destroyed!';
+                endDescription.textContent = 'Your Willpower reached zero and you lost control.';
+            } else if (gameState === 'escaped') {
+                endMessage.className = 'end-message escape-message';
+                endTitle.textContent = 'Successfully Escaped!';
+                endDescription.textContent = 'You broke free from the construct form!';
+            }
+
+            endStats.textContent = `Score: ${score} | Enemies Killed: ${enemiesKilled} | Time: ${Math.floor(gameTime/1000)}s`;
+        }
+
+        // Event listeners
+        document.getElementById('start-btn').onclick = () => {
+            menuScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameState = 'playing';
+            initializeGame();
+            gameLoopInterval = setInterval(gameLoop, 100);
+        };
+
+        document.getElementById('pause-btn').onclick = () => {
+            isPaused = !isPaused;
+            document.getElementById('pause-btn').textContent = isPaused ? '▶' : '⏸';
+        };
+
+        document.getElementById('reset-btn').onclick = () => {
+            clearInterval(gameLoopInterval);
+            gameScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            gameState = 'menu';
+        };
+
+        document.getElementById('try-again-btn').onclick = () => {
+            endScreen.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            gameState = 'menu';
+        };
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing' || isPaused) return;
+
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    e.preventDefault();
+                    movePlayer('up');
+                    break;
+                case 's':
+                case 'arrowdown':
+                    e.preventDefault();
+                    movePlayer('down');
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    e.preventDefault();
+                    movePlayer('left');
+                    break;
+                case 'd':
+                case 'arrowright':
+                    e.preventDefault();
+                    movePlayer('right');
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    useStruggleForControl();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    const nearbyPool = amberPools.find(pool => {
+                        if (pool.consumed) return false;
+                        const distance = Math.sqrt(
+                            Math.pow(pool.x - playerPosition.x, 2) + 
+                            Math.pow(pool.y - playerPosition.y, 2)
+                        );
+                        return distance <= 50;
+                    });
+                    if (nearbyPool) consumeAmberPool(nearbyPool.id);
+                    break;
+                case 'e':
+                    e.preventDefault();
+                    if (health <= BREAK_FREE_THRESHOLD) breakFree();
+                    break;
+            }
+        });
+
+        // Focus the window for keyboard input
+        window.focus();
+    </script>
+</body>
+</html>
