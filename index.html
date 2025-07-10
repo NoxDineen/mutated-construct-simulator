@@ -304,13 +304,14 @@
             
             <div class="instructions">
                 <h2>Instructions</h2>
-                <p><strong>Goal:</strong> Survive as a Mutated Construct by managing Willpower</p>
+                <p><strong>Goal:</strong> Survive as a Mutated Construct by managing Willpower and avoiding wiping the raid</p>
                 <p><strong>Movement:</strong> WASD (W=forward, S=back, A/Q=strafe left, D/E=strafe right)</p>
                 <p><strong>Camera:</strong> Right-click + drag to look around, Mouse wheel to zoom, Drag up for top-down view</p>
                 <p><strong>Amber Strike:</strong> Click on enemies (interrupts casts, deals damage)</p>
                 <p><strong>Struggle for Control:</strong> Spacebar (costs 8 Willpower, stuns you briefly, makes you vulnerable)</p>
                 <p><strong>Consume Amber:</strong> F key when near amber pools (restores 20 Willpower)</p>
                 <p><strong>Break Free:</strong> R key when health is ≤20%</p>
+                <p><strong>CRITICAL:</strong> You will be forced to cast Amber Explosion every 15 seconds - use Struggle for Control to interrupt it or you'll wipe the raid!</p>
                 <p><strong>Willpower:</strong> Drains 2 per second - don't let it reach 0!</p>
                 
                 <div class="instructions-3d">
@@ -379,6 +380,16 @@
                 VULNERABLE! (<span id="vulnerability-time">5</span>s)
             </div>
 
+            <!-- Amber Explosion Cast Bar -->
+            <div id="amber-explosion-cast" class="hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; background-color: rgba(220, 38, 38, 0.9); padding: 16px; border-radius: 8px; text-align: center; border: 3px solid #dc2626;">
+                <div style="color: white; font-weight: bold; margin-bottom: 8px; font-size: 1.25rem;">CASTING AMBER EXPLOSION!</div>
+                <div style="color: white; margin-bottom: 8px;">Use Struggle for Control (SPACEBAR) to interrupt!</div>
+                <div style="width: 300px; height: 12px; background-color: #7f1d1d; border-radius: 6px; overflow: hidden;">
+                    <div id="amber-explosion-progress" style="height: 100%; background-color: #fbbf24; transition: width 0.1s; border-radius: 6px;"></div>
+                </div>
+                <div id="amber-explosion-timer" style="color: white; font-weight: bold; margin-top: 4px;">4.0s</div>
+            </div>
+
             <!-- Game Canvas -->
             <canvas id="game-canvas"></canvas>
 
@@ -420,6 +431,11 @@
         let strugglingForControl = false;
         let struggleTimer = 0;
 
+        // Amber Explosion self-cast mechanic
+        let castingAmberExplosion = false;
+        let amberExplosionCastTime = 0;
+        let lastAmberExplosionTime = 0;
+
         // Game objects
         let enemies = [];
         let amberPools = [];
@@ -447,7 +463,9 @@
         const VULNERABILITY_DURATION = 5000;
         const AMBER_POOL_RESTORE = 20;
         const BREAK_FREE_THRESHOLD = 20;
-        const MOVE_SPEED = 0.25;
+        const MOVE_SPEED = 0.18; // Adjusted for proper raid room scale
+        const AMBER_EXPLOSION_CAST_TIME = 4000; // 4 second cast
+        const AMBER_EXPLOSION_INTERVAL = 15000; // Force cast every 15 seconds
 
         // DOM elements
         const menuScreen = document.getElementById('menu-screen');
@@ -482,8 +500,8 @@
             directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
 
-            // Ground
-            const groundGeometry = new THREE.PlaneGeometry(40, 40);
+            // Ground - larger raid-sized room (approximately 50x50 yards)
+            const groundGeometry = new THREE.PlaneGeometry(60, 60);
             const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
@@ -588,6 +606,9 @@
             amberStrikeCooldown = 0;
             strugglingForControl = false;
             struggleTimer = 0;
+            castingAmberExplosion = false;
+            amberExplosionCastTime = 0;
+            lastAmberExplosionTime = 0;
             playerPosition = { x: 0, z: 0 };
             playerRotation = 0;
             isPaused = false;
@@ -598,18 +619,21 @@
             enemyMeshes = [];
             poolMeshes = [];
 
-            // Create initial enemies
+            // Create initial enemies - spread out for larger room
             enemies = [
-                { id: 1, x: -5, z: -5, health: 100, maxHealth: 100, casting: false, castTime: 0 },
-                { id: 2, x: 5, z: -5, health: 100, maxHealth: 100, casting: false, castTime: 0 },
-                { id: 3, x: -5, z: 5, health: 100, maxHealth: 100, casting: false, castTime: 0 }
+                { id: 1, x: -8, z: -12, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 2, x: 8, z: -12, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 3, x: -8, z: 12, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 4, x: 8, z: 12, health: 100, maxHealth: 100, casting: false, castTime: 0 }
             ];
 
-            // Create initial amber pools
+            // Create initial amber pools - spread around the larger room
             amberPools = [
-                { id: 1, x: -8, z: 8, consumed: false },
-                { id: 2, x: 8, z: 8, consumed: false },
-                { id: 3, x: 0, z: -8, consumed: false }
+                { id: 1, x: -15, z: 15, consumed: false },
+                { id: 2, x: 15, z: 15, consumed: false },
+                { id: 3, x: 0, z: -18, consumed: false },
+                { id: 4, x: -15, z: -15, consumed: false },
+                { id: 5, x: 15, z: -15, consumed: false }
             ];
 
             updateGameObjects();
@@ -695,7 +719,7 @@
                     Math.pow(pool.x - playerPosition.x, 2) + 
                     Math.pow(pool.z - playerPosition.z, 2)
                 );
-                return distance <= 2;
+                return distance <= 3; // Slightly larger range for bigger room
             });
 
             const consumeAbility = document.getElementById('consume-ability');
@@ -730,8 +754,9 @@
             gameTime += 100;
 
             // Drain willpower
-            willpower -= WILLPOWER_DRAIN_RATE * 0.1;
-            if (willpower <= 0) {
+            willpower -= (WILLPOWER_DRAIN_RATE * 0.1);
+            if (willpower <= 0.1) { // Changed from <= 0 to avoid floating point precision issues
+                willpower = 0;
                 gameState = 'dead';
                 showEndScreen();
                 return;
@@ -748,6 +773,24 @@
             // Remove vulnerability when timer expires
             if (vulnerabilityTimer <= 0) {
                 damageVulnerable = false;
+            }
+
+            // Amber Explosion self-cast mechanic
+            if (!castingAmberExplosion && gameTime - lastAmberExplosionTime > AMBER_EXPLOSION_INTERVAL) {
+                // Force player to start casting Amber Explosion
+                castingAmberExplosion = true;
+                amberExplosionCastTime = AMBER_EXPLOSION_CAST_TIME;
+                lastAmberExplosionTime = gameTime;
+            }
+
+            if (castingAmberExplosion) {
+                amberExplosionCastTime -= 100;
+                if (amberExplosionCastTime <= 0) {
+                    // Amber Explosion completes - raid wipe!
+                    gameState = 'dead';
+                    showEndScreen('explosion');
+                    return;
+                }
             }
 
             // Handle movement
@@ -768,12 +811,12 @@
                     const newCastTime = enemy.castTime - 100;
                     if (newCastTime <= 0) {
                         // Cast completed - deal damage
-                        if (!strugglingForControl) {
+                        if (!strugglingForControl && !castingAmberExplosion) {
                             const damage = damageVulnerable ? 40 : 20;
                             health = Math.max(0, health - damage);
                             if (health <= 0) {
                                 gameState = 'dead';
-                                showEndScreen();
+                                showEndScreen('health');
                                 return;
                             }
                         }
@@ -789,8 +832,8 @@
                 const newId = Math.max(...amberPools.map(p => p.id), 0) + 1;
                 amberPools.push({
                     id: newId,
-                    x: -15 + Math.random() * 30,
-                    z: -15 + Math.random() * 30,
+                    x: -25 + Math.random() * 50,
+                    z: -25 + Math.random() * 50,
                     consumed: false
                 });
             }
@@ -801,7 +844,7 @@
 
         // Handle movement
         function handleMovement() {
-            if (strugglingForControl) return;
+            if (strugglingForControl || castingAmberExplosion) return;
 
             const moveVector = new THREE.Vector3();
             
@@ -816,9 +859,9 @@
             playerPosition.x += moveVector.x;
             playerPosition.z += moveVector.z;
 
-            // Keep player in bounds
-            playerPosition.x = Math.max(-18, Math.min(18, playerPosition.x));
-            playerPosition.z = Math.max(-18, Math.min(18, playerPosition.z));
+            // Keep player in bounds - larger room
+            playerPosition.x = Math.max(-28, Math.min(28, playerPosition.x));
+            playerPosition.z = Math.max(-28, Math.min(28, playerPosition.z));
 
             // Update player rotation to face movement direction
             if (moveVector.length() > 0) {
@@ -853,6 +896,13 @@
             damageVulnerable = true;
             vulnerabilityTimer = VULNERABILITY_DURATION;
 
+            // Interrupt Amber Explosion cast - CRITICAL MECHANIC!
+            if (castingAmberExplosion) {
+                castingAmberExplosion = false;
+                amberExplosionCastTime = 0;
+                score += 200; // Bonus points for saving the raid!
+            }
+
             // Interrupt all enemy casts
             enemies.forEach((enemy, index) => {
                 enemies[index] = { ...enemy, casting: false, castTime: 0 };
@@ -861,14 +911,14 @@
 
         function consumeAmberPool(poolId) {
             const pool = amberPools.find(p => p.id === poolId && !p.consumed);
-            if (!pool || strugglingForControl || gameState !== 'playing') return;
+            if (!pool || strugglingForControl || castingAmberExplosion || gameState !== 'playing') return;
 
             const distance = Math.sqrt(
                 Math.pow(pool.x - playerPosition.x, 2) + 
                 Math.pow(pool.z - playerPosition.z, 2)
             );
 
-            if (distance <= 2) {
+            if (distance <= 3) { // Adjusted for larger room
                 pool.consumed = true;
                 willpower = Math.min(100, willpower + AMBER_POOL_RESTORE);
                 maxHealth += 20;
@@ -884,7 +934,7 @@
         }
 
         // Show end screen
-        function showEndScreen() {
+        function showEndScreen(deathType = 'willpower') {
             clearInterval(gameLoopInterval);
             gameScreen.classList.add('hidden');
             endScreen.classList.remove('hidden');
@@ -896,8 +946,16 @@
 
             if (gameState === 'dead') {
                 endMessage.className = 'end-message death-message';
-                endTitle.textContent = 'Construct Destroyed!';
-                endDescription.textContent = 'Your Willpower reached zero and you lost control.';
+                if (deathType === 'explosion') {
+                    endTitle.textContent = 'Amber Explosion - Raid Wiped!';
+                    endDescription.textContent = 'You failed to interrupt your Amber Explosion cast and killed the raid!';
+                } else if (deathType === 'health') {
+                    endTitle.textContent = 'Construct Destroyed!';
+                    endDescription.textContent = 'Your health reached zero from enemy attacks!';
+                } else {
+                    endTitle.textContent = 'Construct Destroyed!';
+                    endDescription.textContent = 'Your Willpower reached zero and you lost control.';
+                }
             } else if (gameState === 'escaped') {
                 endMessage.className = 'end-message escape-message';
                 endTitle.textContent = 'Successfully Escaped!';
@@ -992,7 +1050,7 @@
                             Math.pow(pool.x - playerPosition.x, 2) + 
                             Math.pow(pool.z - playerPosition.z, 2)
                         );
-                        return distance <= 2;
+                        return distance <= 3; // Adjusted for larger room
                     });
                     if (nearbyPool) consumeAmberPool(nearbyPool.id);
                     break;
@@ -1036,6 +1094,11 @@
 
         // Event listeners
         document.getElementById('start-btn').onclick = () => {
+            // Safety: Clear any existing interval before starting
+            if (gameLoopInterval) {
+                clearInterval(gameLoopInterval);
+            }
+            
             menuScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             gameState = 'playing';
@@ -1058,6 +1121,7 @@
         };
 
         document.getElementById('try-again-btn').onclick = () => {
+            clearInterval(gameLoopInterval); // Fix: Clear the interval!
             endScreen.classList.add('hidden');
             menuScreen.classList.remove('hidden');
             gameState = 'menu';
