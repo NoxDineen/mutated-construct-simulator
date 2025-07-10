@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mutated Construct Simulator</title>
+    <title>Mutated Construct Simulator 3D</title>
     <style>
         * {
             margin: 0;
@@ -16,32 +16,123 @@
             background-color: #111827;
             color: white;
             min-height: 100vh;
-            padding: 20px;
+            overflow: hidden;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
         }
 
-        .header {
-            margin-bottom: 20px;
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background-color: rgba(31, 41, 55, 0.9);
+            border-radius: 8px;
+            padding: 16px;
+            z-index: 100;
+            backdrop-filter: blur(4px);
         }
 
-        .title {
-            font-size: 2rem;
+        .hud-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .hud-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-label {
             font-weight: bold;
-            color: #f59e0b;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            font-size: 0.875rem;
         }
 
-        .subtitle {
-            color: #d1d5db;
+        .hud-value {
+            font-size: 1.25rem;
+            margin-bottom: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background-color: #374151;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.2s;
+            border-radius: 3px;
+        }
+
+        .progress-willpower {
+            background-color: #3b82f6;
+        }
+
+        .progress-health {
+            background-color: #ef4444;
+        }
+
+        .abilities {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .ability {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .ability-ready {
+            background-color: #d97706;
+        }
+
+        .ability-cooldown {
+            background-color: #4b5563;
+        }
+
+        .ability-active {
+            background-color: #dc2626;
+        }
+
+        .ability-available {
+            background-color: #059669;
+        }
+
+        .ability-escape {
+            background-color: #eab308;
+            animation: pulse 1s infinite;
         }
 
         .menu-screen, .end-screen {
-            text-align: center;
-            padding: 40px 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(17, 24, 39, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
         }
 
         .instructions {
@@ -49,14 +140,15 @@
             border-radius: 8px;
             padding: 24px;
             margin-bottom: 24px;
-            text-align: left;
+            max-width: 600px;
         }
 
         .instructions h2 {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 16px;
             text-align: center;
+            color: #f59e0b;
         }
 
         .instructions p {
@@ -96,209 +188,92 @@
             background-color: #374151;
         }
 
-        .hud {
-            background-color: #1f2937;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .hud-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .hud-item {
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
         }
 
-        .hud-label {
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-
-        .hud-value {
-            font-size: 1.5rem;
-            margin-bottom: 4px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background-color: #374151;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            transition: width 0.2s;
-            border-radius: 4px;
-        }
-
-        .progress-willpower {
-            background-color: #3b82f6;
-        }
-
-        .progress-health {
-            background-color: #ef4444;
-        }
-
-        .abilities {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .ability {
-            padding: 8px 12px;
-            border-radius: 4px;
+        .controls button {
+            padding: 8px 16px;
             font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .ability-ready {
-            background-color: #d97706;
-        }
-
-        .ability-cooldown {
-            background-color: #4b5563;
-        }
-
-        .ability-active {
-            background-color: #dc2626;
-        }
-
-        .ability-available {
-            background-color: #059669;
-        }
-
-        .ability-escape {
-            background-color: #eab308;
-            animation: pulse 1s infinite;
-        }
-
-        .game-area {
-            position: relative;
-            width: 800px;
-            height: 600px;
-            background-color: #374151;
-            border-radius: 8px;
-            margin: 0 auto;
-            overflow: hidden;
-        }
-
-        .player {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid white;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .player-normal {
-            background-color: #f59e0b;
-        }
-
-        .player-struggling {
-            background-color: #ef4444;
-            animation: pulse 0.5s infinite;
-        }
-
-        .player-vulnerable {
-            background-color: #f97316;
-        }
-
-        .enemy {
-            position: absolute;
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .enemy-normal {
-            background-color: #7c3aed;
-        }
-
-        .enemy-casting {
-            background-color: #dc2626;
-            animation: pulse 0.5s infinite;
-        }
-
-        .cast-bar {
-            position: absolute;
-            height: 4px;
-            background-color: #f87171;
-            border-radius: 2px;
-            transition: width 0.1s;
-        }
-
-        .amber-pool {
-            position: absolute;
-            width: 24px;
-            height: 24px;
-            background-color: #fbbf24;
-            border: 2px solid #f97316;
-            border-radius: 50%;
-            cursor: pointer;
-            animation: pulse 1s infinite;
         }
 
         .vulnerability-indicator {
             position: absolute;
-            top: 16px;
-            left: 16px;
+            top: 100px;
+            left: 20px;
             background-color: #dc2626;
             color: white;
             padding: 8px 12px;
             border-radius: 4px;
             animation: pulse 0.5s infinite;
+            z-index: 100;
         }
 
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 16px;
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 50;
         }
 
-        .end-screen {
-            padding: 40px 0;
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            height: 2px;
+            width: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .instructions-3d {
+            background-color: #374151;
+            padding: 12px;
+            border-radius: 4px;
+            margin-top: 12px;
+        }
+
+        .instructions-3d h3 {
+            color: #f59e0b;
+            margin-bottom: 8px;
         }
 
         .end-message {
+            background-color: #1f2937;
             border-radius: 8px;
             padding: 24px;
             margin-bottom: 24px;
+            text-align: center;
+            max-width: 500px;
         }
 
         .death-message {
-            background-color: #7f1d1d;
+            border: 2px solid #dc2626;
         }
 
         .escape-message {
-            background-color: #14532d;
+            border: 2px solid #10b981;
         }
 
         @keyframes pulse {
@@ -307,31 +282,48 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
+        }
+
+        #game-canvas {
+            display: block;
+            cursor: crosshair;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1 class="title">Mutated Construct Simulator</h1>
-            <p class="subtitle">Learn the vehicle mechanics before your raid!</p>
-        </div>
-
         <!-- Menu Screen -->
         <div id="menu-screen" class="menu-screen">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h1 style="font-size: 2.5rem; font-weight: bold; color: #f59e0b; margin-bottom: 8px;">
+                    Mutated Construct Simulator 3D
+                </h1>
+                <p style="color: #d1d5db; font-size: 1.125rem;">WoW-style 3D training for raid mechanics</p>
+            </div>
+            
             <div class="instructions">
                 <h2>Instructions</h2>
                 <p><strong>Goal:</strong> Survive as a Mutated Construct by managing Willpower</p>
-                <p><strong>Movement:</strong> WASD or Arrow Keys, Q/E for strafing</p>
+                <p><strong>Movement:</strong> WASD (W=forward, S=back, A/Q=strafe left, D/E=strafe right)</p>
+                <p><strong>Camera:</strong> Right-click + drag to look around, Mouse wheel to zoom, Drag up for top-down view</p>
                 <p><strong>Amber Strike:</strong> Click on enemies (interrupts casts, deals damage)</p>
                 <p><strong>Struggle for Control:</strong> Spacebar (costs 8 Willpower, stuns you briefly, makes you vulnerable)</p>
                 <p><strong>Consume Amber:</strong> F key when near amber pools (restores 20 Willpower)</p>
                 <p><strong>Break Free:</strong> R key when health is ≤20%</p>
                 <p><strong>Willpower:</strong> Drains 2 per second - don't let it reach 0!</p>
-                <p><strong>Strategy:</strong> Interrupt enemy casts, consume amber to restore Willpower, survive!</p>
+                
+                <div class="instructions-3d">
+                    <h3>3D Navigation Tips:</h3>
+                    <p>• Use right-click + mouse to rotate camera just like WoW</p>
+                    <p>• Drag mouse up while right-clicking for top-down raid view</p>
+                    <p>• Movement is relative to where your camera is facing</p>
+                    <p>• Click enemies when your crosshair is over them</p>
+                    <p>• Practice moving and turning simultaneously</p>
+                </div>
             </div>
-            <button id="start-btn" class="btn">▶ Start Simulation</button>
+            
+            <button id="start-btn" class="btn">▶ Start 3D Simulation</button>
         </div>
 
         <!-- Game Screen -->
@@ -379,13 +371,16 @@
                 </div>
             </div>
 
-            <!-- Game Area -->
-            <div id="game-area" class="game-area">
-                <div id="player" class="player player-normal">YOU</div>
-                <div id="vulnerability-indicator" class="vulnerability-indicator hidden">
-                    VULNERABLE! (<span id="vulnerability-time">5</span>s)
-                </div>
+            <!-- Crosshair -->
+            <div class="crosshair"></div>
+
+            <!-- Vulnerability Indicator -->
+            <div id="vulnerability-indicator" class="vulnerability-indicator hidden">
+                VULNERABLE! (<span id="vulnerability-time">5</span>s)
             </div>
+
+            <!-- Game Canvas -->
+            <canvas id="game-canvas"></canvas>
 
             <!-- Controls -->
             <div class="controls">
@@ -399,15 +394,16 @@
             <div id="end-message" class="end-message">
                 <h2 id="end-title">Game Over</h2>
                 <p id="end-description">Description</p>
-                <p id="end-stats">Stats</p>
+                <p id="end-stats" style="font-size: 1.125rem; font-weight: bold; margin-top: 12px;">Stats</p>
             </div>
             <button id="try-again-btn" class="btn">Try Again</button>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // Game state
-        let gameState = 'menu'; // 'menu', 'playing', 'paused', 'dead', 'escaped'
+        let gameState = 'menu';
         let willpower = 100;
         let health = 100;
         let maxHealth = 100;
@@ -416,6 +412,8 @@
         let gameTime = 0;
         let score = 0;
         let enemiesKilled = 0;
+        let gameLoopInterval = null;
+        let isPaused = false;
 
         // Ability states
         let amberStrikeCooldown = 0;
@@ -425,26 +423,157 @@
         // Game objects
         let enemies = [];
         let amberPools = [];
-        let playerPosition = { x: 400, y: 300 };
-        let gameLoopInterval = null;
-        let isPaused = false;
+
+        // 3D Scene variables
+        let scene, camera, renderer, player;
+        let enemyMeshes = [];
+        let poolMeshes = [];
+        let raycaster, mouse;
+
+        // Movement and camera
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let strafeLeft = false, strafeRight = false;
+        let mouseDown = false;
+        let cameraRotation = { x: 0, y: 0 };
+        let cameraDistance = 8;
+        let playerPosition = { x: 0, z: 0 };
+        let playerRotation = 0;
 
         // Constants
         const WILLPOWER_DRAIN_RATE = 2;
-        const AMBER_STRIKE_DAMAGE = 350000;
         const AMBER_STRIKE_COOLDOWN = 2000;
         const STRUGGLE_COST = 8;
         const STRUGGLE_DURATION = 500;
         const VULNERABILITY_DURATION = 5000;
         const AMBER_POOL_RESTORE = 20;
         const BREAK_FREE_THRESHOLD = 20;
+        const MOVE_SPEED = 0.25;
 
         // DOM elements
         const menuScreen = document.getElementById('menu-screen');
         const gameScreen = document.getElementById('game-screen');
         const endScreen = document.getElementById('end-screen');
-        const gameArea = document.getElementById('game-area');
-        const player = document.getElementById('player');
+        const canvas = document.getElementById('game-canvas');
+
+        // Initialize 3D scene
+        function init3D() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a1810);
+            scene.fog = new THREE.Fog(0x2a1810, 10, 50);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(40, 40);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Player
+            const playerGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 8);
+            const playerMaterial = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+            player = new THREE.Mesh(playerGeometry, playerMaterial);
+            player.position.set(0, 0.6, 0);
+            player.castShadow = true;
+            scene.add(player);
+
+            // Raycaster for mouse interactions
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Position camera
+            updateCamera();
+        }
+
+        // Update camera position (third-person)
+        function updateCamera() {
+            const offsetX = Math.sin(cameraRotation.y) * cameraDistance;
+            const offsetZ = Math.cos(cameraRotation.y) * cameraDistance;
+            const offsetY = 3 + Math.sin(cameraRotation.x) * 2;
+
+            camera.position.set(
+                playerPosition.x + offsetX,
+                offsetY,
+                playerPosition.z + offsetZ
+            );
+            camera.lookAt(playerPosition.x, 0.6, playerPosition.z);
+        }
+
+        // Create enemy mesh
+        function createEnemy(enemy) {
+            const geometry = new THREE.BoxGeometry(1, 1.5, 1);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: enemy.casting ? 0xdc2626 : 0x7c3aed 
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(enemy.x, 0.75, enemy.z);
+            mesh.castShadow = true;
+            mesh.userData = { id: enemy.id, type: 'enemy' };
+
+            // Cast indicator
+            if (enemy.casting) {
+                const indicatorGeometry = new THREE.RingGeometry(0.5, 0.7, 8);
+                const indicatorMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xff0000, 
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+                indicator.rotation.x = -Math.PI / 2;
+                indicator.position.y = 0.1;
+                mesh.add(indicator);
+            }
+
+            scene.add(mesh);
+            return mesh;
+        }
+
+        // Create amber pool mesh
+        function createAmberPool(pool) {
+            const geometry = new THREE.SphereGeometry(0.4, 8, 6);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0xfbbf24,
+                emissive: 0x332200
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(pool.x, 0.4, pool.z);
+            mesh.userData = { id: pool.id, type: 'pool' };
+            
+            // Add glow effect
+            const glowGeometry = new THREE.SphereGeometry(0.6, 8, 6);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xfbbf24,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            mesh.add(glow);
+
+            scene.add(mesh);
+            return mesh;
+        }
 
         // Initialize game
         function initializeGame() {
@@ -459,28 +588,74 @@
             amberStrikeCooldown = 0;
             strugglingForControl = false;
             struggleTimer = 0;
-            playerPosition = { x: 400, y: 300 };
+            playerPosition = { x: 0, z: 0 };
+            playerRotation = 0;
             isPaused = false;
+
+            // Clear existing meshes
+            enemyMeshes.forEach(mesh => scene.remove(mesh));
+            poolMeshes.forEach(mesh => scene.remove(mesh));
+            enemyMeshes = [];
+            poolMeshes = [];
 
             // Create initial enemies
             enemies = [
-                { id: 1, x: 200, y: 200, health: 100, maxHealth: 100, casting: false, castTime: 0 },
-                { id: 2, x: 600, y: 200, health: 100, maxHealth: 100, casting: false, castTime: 0 },
-                { id: 3, x: 200, y: 400, health: 100, maxHealth: 100, casting: false, castTime: 0 }
+                { id: 1, x: -5, z: -5, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 2, x: 5, z: -5, health: 100, maxHealth: 100, casting: false, castTime: 0 },
+                { id: 3, x: -5, z: 5, health: 100, maxHealth: 100, casting: false, castTime: 0 }
             ];
 
             // Create initial amber pools
             amberPools = [
-                { id: 1, x: 150, y: 500, consumed: false },
-                { id: 2, x: 650, y: 500, consumed: false },
-                { id: 3, x: 400, y: 150, consumed: false }
+                { id: 1, x: -8, z: 8, consumed: false },
+                { id: 2, x: 8, z: 8, consumed: false },
+                { id: 3, x: 0, z: -8, consumed: false }
             ];
 
+            updateGameObjects();
             updateUI();
-            renderGameObjects();
         }
 
-        // Update UI elements
+        // Update 3D game objects
+        function updateGameObjects() {
+            // Update player position
+            player.position.set(playerPosition.x, 0.6, playerPosition.z);
+            player.rotation.y = playerRotation;
+
+            // Update player material based on state
+            if (strugglingForControl) {
+                player.material.color.setHex(0xdc2626);
+                player.material.emissive.setHex(0x220000);
+            } else if (damageVulnerable) {
+                player.material.color.setHex(0xf97316);
+                player.material.emissive.setHex(0x331100);
+            } else {
+                player.material.color.setHex(0xf59e0b);
+                player.material.emissive.setHex(0x000000);
+            }
+
+            // Update enemies
+            enemyMeshes.forEach(mesh => scene.remove(mesh));
+            enemyMeshes = [];
+            enemies.forEach(enemy => {
+                if (enemy.health > 0) {
+                    enemyMeshes.push(createEnemy(enemy));
+                }
+            });
+
+            // Update amber pools
+            poolMeshes.forEach(mesh => scene.remove(mesh));
+            poolMeshes = [];
+            amberPools.forEach(pool => {
+                if (!pool.consumed) {
+                    poolMeshes.push(createAmberPool(pool));
+                }
+            });
+
+            updateCamera();
+        }
+
+        // Update UI
         function updateUI() {
             document.getElementById('willpower-value').textContent = `${Math.ceil(willpower)}/100`;
             document.getElementById('willpower-bar').style.width = `${willpower}%`;
@@ -518,9 +693,9 @@
                 if (pool.consumed) return false;
                 const distance = Math.sqrt(
                     Math.pow(pool.x - playerPosition.x, 2) + 
-                    Math.pow(pool.y - playerPosition.y, 2)
+                    Math.pow(pool.z - playerPosition.z, 2)
                 );
-                return distance <= 50;
+                return distance <= 2;
             });
 
             const consumeAbility = document.getElementById('consume-ability');
@@ -546,66 +721,6 @@
             } else {
                 vulnIndicator.classList.add('hidden');
             }
-
-            // Update player appearance
-            if (strugglingForControl) {
-                player.className = 'player player-struggling';
-            } else if (damageVulnerable) {
-                player.className = 'player player-vulnerable';
-            } else {
-                player.className = 'player player-normal';
-            }
-        }
-
-        // Render game objects
-        function renderGameObjects() {
-            // Clear existing objects
-            const existingEnemies = gameArea.querySelectorAll('.enemy');
-            const existingPools = gameArea.querySelectorAll('.amber-pool');
-            const existingCastBars = gameArea.querySelectorAll('.cast-bar');
-            
-            existingEnemies.forEach(el => el.remove());
-            existingPools.forEach(el => el.remove());
-            existingCastBars.forEach(el => el.remove());
-
-            // Update player position
-            player.style.left = `${playerPosition.x - 16}px`;
-            player.style.top = `${playerPosition.y - 16}px`;
-
-            // Render enemies
-            enemies.forEach(enemy => {
-                if (enemy.health <= 0) return;
-
-                const enemyEl = document.createElement('div');
-                enemyEl.className = enemy.casting ? 'enemy enemy-casting' : 'enemy enemy-normal';
-                enemyEl.style.left = `${enemy.x - 24}px`;
-                enemyEl.style.top = `${enemy.y - 24}px`;
-                enemyEl.textContent = enemy.casting ? 'CAST' : 'MOB';
-                enemyEl.onclick = () => useAmberStrike(enemy.id);
-                gameArea.appendChild(enemyEl);
-
-                // Render cast bar
-                if (enemy.casting) {
-                    const castBar = document.createElement('div');
-                    castBar.className = 'cast-bar';
-                    castBar.style.left = `${enemy.x - 24}px`;
-                    castBar.style.top = `${enemy.y + 32}px`;
-                    castBar.style.width = `${(enemy.castTime / 3000) * 48}px`;
-                    gameArea.appendChild(castBar);
-                }
-            });
-
-            // Render amber pools
-            amberPools.forEach(pool => {
-                if (pool.consumed) return;
-
-                const poolEl = document.createElement('div');
-                poolEl.className = 'amber-pool';
-                poolEl.style.left = `${pool.x - 12}px`;
-                poolEl.style.top = `${pool.y - 12}px`;
-                poolEl.onclick = () => consumeAmberPool(pool.id);
-                gameArea.appendChild(poolEl);
-            });
         }
 
         // Game loop
@@ -634,6 +749,9 @@
             if (vulnerabilityTimer <= 0) {
                 damageVulnerable = false;
             }
+
+            // Handle movement
+            handleMovement();
 
             // Enemy AI
             enemies.forEach((enemy, index) => {
@@ -671,14 +789,41 @@
                 const newId = Math.max(...amberPools.map(p => p.id), 0) + 1;
                 amberPools.push({
                     id: newId,
-                    x: 100 + Math.random() * 600,
-                    y: 100 + Math.random() * 400,
+                    x: -15 + Math.random() * 30,
+                    z: -15 + Math.random() * 30,
                     consumed: false
                 });
             }
 
+            updateGameObjects();
             updateUI();
-            renderGameObjects();
+        }
+
+        // Handle movement
+        function handleMovement() {
+            if (strugglingForControl) return;
+
+            const moveVector = new THREE.Vector3();
+            
+            if (moveForward) moveVector.z -= MOVE_SPEED;
+            if (moveBackward) moveVector.z += MOVE_SPEED;
+            if (moveLeft || strafeLeft) moveVector.x -= MOVE_SPEED;
+            if (moveRight || strafeRight) moveVector.x += MOVE_SPEED;
+
+            // Rotate movement relative to camera
+            moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraRotation.y);
+            
+            playerPosition.x += moveVector.x;
+            playerPosition.z += moveVector.z;
+
+            // Keep player in bounds
+            playerPosition.x = Math.max(-18, Math.min(18, playerPosition.x));
+            playerPosition.z = Math.max(-18, Math.min(18, playerPosition.z));
+
+            // Update player rotation to face movement direction
+            if (moveVector.length() > 0) {
+                playerRotation = Math.atan2(moveVector.x, moveVector.z);
+            }
         }
 
         // Abilities
@@ -720,10 +865,10 @@
 
             const distance = Math.sqrt(
                 Math.pow(pool.x - playerPosition.x, 2) + 
-                Math.pow(pool.y - playerPosition.y, 2)
+                Math.pow(pool.z - playerPosition.z, 2)
             );
 
-            if (distance <= 50) {
+            if (distance <= 2) {
                 pool.consumed = true;
                 willpower = Math.min(100, willpower + AMBER_POOL_RESTORE);
                 maxHealth += 20;
@@ -736,18 +881,6 @@
             if (health > BREAK_FREE_THRESHOLD || gameState !== 'playing') return;
             gameState = 'escaped';
             showEndScreen();
-        }
-
-        // Movement
-        function movePlayer(direction) {
-            if (strugglingForControl || gameState !== 'playing' || isPaused) return;
-
-            switch(direction) {
-                case 'up': playerPosition.y = Math.max(50, playerPosition.y - 20); break;
-                case 'down': playerPosition.y = Math.min(550, playerPosition.y + 20); break;
-                case 'left': playerPosition.x = Math.max(50, playerPosition.x - 20); break;
-                case 'right': playerPosition.x = Math.min(750, playerPosition.x + 20); break;
-            }
         }
 
         // Show end screen
@@ -774,13 +907,142 @@
             endStats.textContent = `Score: ${score} | Enemies Killed: ${enemiesKilled} | Time: ${Math.floor(gameTime/1000)}s`;
         }
 
+        // Mouse controls
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 2) { // Right click
+                mouseDown = true;
+                canvas.requestPointerLock();
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                mouseDown = false;
+                document.exitPointerLock();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                cameraRotation.y -= e.movementX * 0.005;
+                cameraRotation.x += e.movementY * 0.005; // Inverted to match WoW defaults
+                // Allow much more vertical range for top-down view
+                cameraRotation.x = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/3, cameraRotation.x));
+            }
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            cameraDistance = Math.max(3, Math.min(15, cameraDistance + e.deltaY * 0.01));
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (gameState !== 'playing' || e.button === 2) return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects([...enemyMeshes, ...poolMeshes], true);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                if (object.userData.type === 'enemy') {
+                    useAmberStrike(object.userData.id);
+                } else if (object.userData.type === 'pool') {
+                    consumeAmberPool(object.userData.id);
+                }
+            }
+        });
+
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing' || isPaused) return;
+
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    moveForward = true;
+                    break;
+                case 's':
+                    moveBackward = true;
+                    break;
+                case 'a':
+                case 'q':
+                    if (e.key.toLowerCase() === 'a') moveLeft = true;
+                    if (e.key.toLowerCase() === 'q') strafeLeft = true;
+                    break;
+                case 'd':
+                case 'e':
+                    if (e.key.toLowerCase() === 'd') moveRight = true;
+                    if (e.key.toLowerCase() === 'e') strafeRight = true;
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    useStruggleForControl();
+                    break;
+                case 'f':
+                    e.preventDefault();
+                    const nearbyPool = amberPools.find(pool => {
+                        if (pool.consumed) return false;
+                        const distance = Math.sqrt(
+                            Math.pow(pool.x - playerPosition.x, 2) + 
+                            Math.pow(pool.z - playerPosition.z, 2)
+                        );
+                        return distance <= 2;
+                    });
+                    if (nearbyPool) consumeAmberPool(nearbyPool.id);
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    if (health <= BREAK_FREE_THRESHOLD) breakFree();
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    moveForward = false;
+                    break;
+                case 's':
+                    moveBackward = false;
+                    break;
+                case 'a':
+                    moveLeft = false;
+                    break;
+                case 'q':
+                    strafeLeft = false;
+                    break;
+                case 'd':
+                    moveRight = false;
+                    break;
+                case 'e':
+                    strafeRight = false;
+                    break;
+            }
+        });
+
+        // Render loop
+        function animate() {
+            requestAnimationFrame(animate);
+            if (gameState === 'playing' && !isPaused) {
+                renderer.render(scene, camera);
+            }
+        }
+
         // Event listeners
         document.getElementById('start-btn').onclick = () => {
             menuScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
             gameState = 'playing';
+            init3D();
             initializeGame();
             gameLoopInterval = setInterval(gameLoop, 100);
+            animate();
         };
 
         document.getElementById('pause-btn').onclick = () => {
@@ -801,58 +1063,14 @@
             gameState = 'menu';
         };
 
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            if (gameState !== 'playing' || isPaused) return;
-
-            switch(e.key.toLowerCase()) {
-                case 'w':
-                case 'arrowup':
-                    e.preventDefault();
-                    movePlayer('up');
-                    break;
-                case 's':
-                case 'arrowdown':
-                    e.preventDefault();
-                    movePlayer('down');
-                    break;
-                case 'a':
-                case 'q':
-                case 'arrowleft':
-                    e.preventDefault();
-                    movePlayer('left');
-                    break;
-                case 'd':
-                case 'e':
-                case 'arrowright':
-                    e.preventDefault();
-                    movePlayer('right');
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    useStruggleForControl();
-                    break;
-                case 'f':
-                    e.preventDefault();
-                    const nearbyPool = amberPools.find(pool => {
-                        if (pool.consumed) return false;
-                        const distance = Math.sqrt(
-                            Math.pow(pool.x - playerPosition.x, 2) + 
-                            Math.pow(pool.y - playerPosition.y, 2)
-                        );
-                        return distance <= 50;
-                    });
-                    if (nearbyPool) consumeAmberPool(nearbyPool.id);
-                    break;
-                case 'r':
-                    e.preventDefault();
-                    if (health <= BREAK_FREE_THRESHOLD) breakFree();
-                    break;
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
             }
         });
-
-        // Focus the window for keyboard input
-        window.focus();
     </script>
 </body>
 </html>
